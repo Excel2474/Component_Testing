@@ -1,0 +1,123 @@
+#include "WPILib.h"
+
+class Robot: public IterativeRobot
+{
+
+	RobotDrive myRobot; // robot drive system
+	Joystick stick; // only joystick
+
+	LiveWindow *lw;
+	Talon joeTalon;
+	Talon kaylaTalon;
+	Solenoid numanumamaticExtend;
+	Solenoid numanumamaticRetract;
+	//DigitalInput clicker = new DigitalInput(0);
+	int autoLoopCounter;
+	bool extended = false;
+	bool numanumamaticIsPressed = false;
+
+public:
+	Robot() :
+		myRobot(0, 1),	// these must be initialized in the same order
+		stick(0),// as they are declared above.
+		lw(NULL),
+		joeTalon(7),
+		kaylaTalon(6),
+		numanumamaticExtend(0),
+		numanumamaticRetract(1),
+		//clicker(0),
+		autoLoopCounter(0)
+	{
+		myRobot.SetExpiration(0.1);
+	}
+
+private:
+	void RobotInit()
+	{
+		lw = LiveWindow::GetInstance();
+	}
+
+	void AutonomousInit()
+	{
+		autoLoopCounter = 0;
+	}
+
+	void AutonomousPeriodic()
+	{
+		if(autoLoopCounter < 100) //Check if we've completed 100 loops (approximately 2 seconds)
+		{
+			myRobot.Drive(-0.5, 0.0); 	// drive forwards half speed
+			autoLoopCounter++;
+			} else {
+			myRobot.Drive(0.0, 0.0); 	// stop robot
+		}
+	}
+
+	void TeleopInit()
+	{
+
+	}
+
+	void TeleopPeriodic()
+	{
+		myRobot.ArcadeDrive(stick); // drive with arcade style (use right stick)
+		if (stick.GetRawAxis(1) > 0 || stick.GetRawAxis(1) < 0)
+			{
+				joeTalon.SetSpeed(stick.GetRawAxis(1));
+				kaylaTalon.SetSpeed(stick.GetRawAxis(1));
+			}
+		else
+			{
+				joeTalon.SetSpeed(0.0);
+				kaylaTalon.SetSpeed(0.0);
+			}
+
+		if (stick.GetRawAxis(4) > 0)
+			{
+				kaylaTalon.SetSpeed(0.5*stick.GetRawAxis(1));
+				joeTalon.SetSpeed(2*stick.GetRawAxis(1)) ;
+			}
+		else if (stick.GetRawAxis(4) < 0)
+			{
+			kaylaTalon.SetSpeed(2*stick.GetRawAxis(1));
+			joeTalon.SetSpeed(0.5*stick.GetRawAxis(1));
+			}
+
+		if ((stick.GetRawButton(4) == true) && (extended == false) && (numanumamaticIsPressed == false))
+		{
+			numanumamaticExtend.Set(true);
+			numanumamaticRetract.Set(false);
+			extended = true;
+			numanumamaticIsPressed = true;
+		}
+		else if ((stick.GetRawButton(4) == true) && (extended == true) && (numanumamaticIsPressed == false))
+		{
+			numanumamaticExtend.Set(false);
+			numanumamaticRetract.Set(true);
+			extended = false;
+			numanumamaticIsPressed = true;
+		}
+		else if (stick.GetRawButton(4) == false)
+		{
+			numanumamaticIsPressed = false;
+		}
+
+
+
+		//if (clicker.Get() == true)
+		//	{
+		//		joeTalon.SetSpeed(1.0);
+		//	}
+		//else
+		//	{
+		//		joeTalon.SetSpeed(0.0);
+		//	}
+	}
+
+	void TestPeriodic()
+	{
+		lw->Run();
+	}
+};
+
+START_ROBOT_CLASS(Robot);
